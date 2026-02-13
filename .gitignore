@@ -1,51 +1,47 @@
 ```
-# Laravel-specific ignores
-vendor/
-bootstrap/cache/
-storage/logs/
-storage/framework/
-public/storage
-.env
-.env.local
-.env.*
-!.env.example
-
 # Dependencies
 node_modules/
 
-# Compiled and build artifacts
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.pyc
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.*
+.env
+.env.*
 
-# Logs and temp files
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+
+# Logs
 *.log
-*.tmp
-*.swp
 
-# Editors
-.vscode/
-.idea/
-
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Coverage
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Coverage reports
 coverage/
 htmlcov/
 .coverage
 
 # Testing
-.phpunit.result.cache
-
-# Build directories
-dist/
-build/
-target/
+.pytest_cache/
+.mypy_cache/
 ```
