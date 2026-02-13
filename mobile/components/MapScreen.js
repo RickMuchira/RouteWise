@@ -12,11 +12,11 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { requestLocationPermissions, watchPosition } from '../utils/location';
 import { routeService } from '../services/api';
 import StudentPicker from './StudentPicker';
+import OpenStreetMap from './OpenStreetMap';
 
 const MapScreen = () => {
   const [location, setLocation] = useState(null);
@@ -214,78 +214,60 @@ const MapScreen = () => {
   const fitToRoute = () => {
     if (routePoints.length === 0) return;
 
-    const coordinates = routePoints.map(point => ({
-      latitude: point.latitude,
-      longitude: point.longitude,
-    }));
+    // Calculate bounding box for the route
+    const lats = routePoints.map(point => point.latitude);
+    const lngs = routePoints.map(point => point.longitude);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
 
-    if (coordinates.length > 1) {
-      mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
-    } else if (coordinates.length === 1 && location) {
-      mapRef.current.animateToRegion({
-        ...coordinates[0],
+    // Approximate zoom level based on bounding box
+    const latDiff = maxLat - minLat;
+    const lngDiff = maxLng - minLng;
+    const zoom = Math.round(13 - Math.max(latDiff, lngDiff) * 10); // Rough approximation
+
+    setMapRegion({
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: latDiff * 1.2,
+      longitudeDelta: lngDiff * 1.2,
+      zoom: Math.max(zoom, 10) // Ensure minimum zoom level
+    });
+  };
+
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 37.78825, // Default to somewhere reasonable
+    longitude: -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+    zoom: 13
+  });
+
+  const mapRef = useRef(null);
+
+  // Update map region when location changes
+  useEffect(() => {
+    if (location && !isTracking) {
+      setMapRegion({
+        latitude: location.latitude,
+        longitude: location.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
+        zoom: 15
       });
     }
-  };
+  }, [location]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: 37.78825, // Default to somewhere reasonable
-          longitude: -122.4324,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
+      <OpenStreetMap
+        routePoints={routePoints}
+        currentLocation={location}
+        studentPickups={[]} // We'll add actual student pickups later if needed
+        region={mapRegion}
         showsUserLocation={true}
-        showsMyLocationButton={true}
-        followsUserLocation={true}
-      >
-        {/* Current Location Marker */}
-        {location && (
-          <Marker
-            coordinate={{
-              latitude: location.latitude,
-              longitude: location.longitude,
-            }}
-            title="Current Location"
-            pinColor="blue"
-          />
-        )}
-
-        {/* Route Polyline */}
-        {routePoints.length > 1 && (
-          <Polyline
-            coordinates={routePoints.map(point => ({
-              latitude: point.latitude,
-              longitude: point.longitude,
-            }))}
-            strokeColor="#FF0000"
-            strokeWidth={4}
-          />
-        )}
-
-        {/* Route Points Markers */}
-        {routePoints.map((point, index) => (
-          <Marker
-            key={point.id}
-            coordinate={{
-              latitude: point.latitude,
-              longitude: point.longitude,
-            }}
-            title={`Point ${index + 1}`}
-            pinColor={index === 0 ? '#00FF00' : index === routePoints.length - 1 ? '#0000FF' : '#FF0000'}
-          />
-        ))}
-      </MapView>
+      />
 
       {/* Control Panel */}
       <View style={styles.controlPanel}>

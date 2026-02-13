@@ -1,47 +1,44 @@
 ```
 # Dependencies
 node_modules/
+vendor/
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.ENV.*
-.env
-.env.*
-
-# Build outputs
+# Build artifacts
 dist/
 build/
 *.min.js
 *.min.css
 
-# Logs
-*.log
+# Environment
+.env
+.env.local
+.env.*
 
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Editor files
+# Editor/IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *.tmp
 
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
+# Logs
+*.log
 
-# Testing
-.pytest_cache/
-.mypy_cache/
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP
+__pycache__/
+*.php~
+.htaccess
+
+# Mobile app
+.mobile/
+.expo/
+ios/Pods/
+ios/build/
+android/build/
+*.apk
+*.aab
 ```
