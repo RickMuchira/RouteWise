@@ -7,7 +7,10 @@ import {
   TouchableOpacity, 
   Modal,
   FlatList,
-  SafeAreaView 
+  SafeAreaView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import * as Location from 'expo-location';
 import { requestLocationPermissions, watchPosition } from '../utils/location';
@@ -21,6 +24,9 @@ const MapScreen = () => {
   const [currentRoute, setCurrentRoute] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [startRouteModalVisible, setStartRouteModalVisible] = useState(false);
+  const [routeName, setRouteName] = useState('');
+  const [busId, setBusId] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [students, setStudents] = useState([]);
   
@@ -56,24 +62,31 @@ const MapScreen = () => {
     };
   }, []);
 
-  // Start route tracking
-  const startTracking = async () => {
+  // Show start route modal
+  const showStartRouteModal = () => {
     if (isTracking) return;
+    setRouteName('');
+    setBusId('');
+    setStartRouteModalVisible(true);
+  };
 
-    // Get user input for route name and bus ID
-    const routeName = prompt('Enter route name:');
-    const busId = prompt('Enter bus ID:');
-
-    if (!routeName || !busId) {
+  // Start route tracking (called from modal submit)
+  const startTracking = async () => {
+    if (!routeName.trim() || !busId.trim()) {
       Alert.alert('Error', 'Route name and bus ID are required');
       return;
     }
 
+    const parsedBusId = parseInt(busId, 10);
+    if (isNaN(parsedBusId) || parsedBusId < 1) {
+      Alert.alert('Error', 'Bus ID must be a positive number');
+      return;
+    }
+
     try {
-      // Start a new route via API
       const routeData = {
-        name: routeName,
-        bus_id: parseInt(busId),
+        name: routeName.trim(),
+        bus_id: parsedBusId,
       };
 
       const response = await routeService.startRoute(routeData);
@@ -81,13 +94,13 @@ const MapScreen = () => {
         setCurrentRoute(response.route);
         setRoutePoints([]);
         setIsTracking(true);
+        setStartRouteModalVisible(false);
 
-        // Start watching location
         locationSubscription.current = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 5000, // Update every 5 seconds
-            distanceInterval: 5, // Minimum distance interval in meters
+            timeInterval: 5000,
+            distanceInterval: 5,
           },
           handleNewLocation
         );
@@ -98,7 +111,7 @@ const MapScreen = () => {
       }
     } catch (error) {
       console.error('Error starting route:', error);
-      Alert.alert('Error', 'Failed to start route');
+      Alert.alert('Error', error.response?.data?.message || 'Failed to start route');
     }
   };
 
@@ -260,7 +273,7 @@ const MapScreen = () => {
       <View style={styles.controlPanel}>
         <TouchableOpacity
           style={[styles.button, isTracking ? styles.activeButton : styles.inactiveButton]}
-          onPress={isTracking ? stopTracking : startTracking}
+          onPress={isTracking ? stopTracking : showStartRouteModal}
         >
           <Text style={styles.buttonText}>
             {isTracking ? 'Stop Tracking' : 'Start Tracking'}
@@ -287,6 +300,51 @@ const MapScreen = () => {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Start Route Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={startRouteModalVisible}
+        onRequestClose={() => setStartRouteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Start Route</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Route name (e.g. Morning Run)"
+              value={routeName}
+              onChangeText={setRouteName}
+              autoCapitalize="words"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Bus ID (e.g. 1)"
+              value={busId}
+              onChangeText={setBusId}
+              keyboardType="number-pad"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setStartRouteModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.inactiveButton]}
+                onPress={startTracking}
+              >
+                <Text style={styles.buttonText}>Start</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Student Picker Modal */}
       <Modal
@@ -404,6 +462,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+    marginTop: 10,
   },
   modalTitle: {
     fontSize: 18,
