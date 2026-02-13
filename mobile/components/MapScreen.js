@@ -30,7 +30,6 @@ const MapScreen = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [students, setStudents] = useState([]);
   
-  const mapRef = useRef(null);
   const locationSubscription = useRef(null);
 
   // Initialize location permissions and get students
@@ -243,8 +242,6 @@ const MapScreen = () => {
     longitudeDelta: 0.0421,
     zoom: 13
   });
-
-  const mapRef = useRef(null);
 
   // Update map region when location changes
   useEffect(() => {
